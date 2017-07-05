@@ -8,7 +8,6 @@
 #include <linux/pm.h>
 #include <linux/pm_runtime.h>
 #include <linux/version.h>
-#include <linux/clk.h>
 
 #include <asm/sizes.h>
 
@@ -32,54 +31,6 @@
 
 
 static const int NODES_SIZE = 45 * PAGE_SIZE;
-
-int clk_prepare(struct clk *clk)
-{
-	int ret = 0;
-
-	mutex_lock(&clk->prepare_lock);
-	if (clk->prepare_count == 0 && clk->ops->prepare)
-		ret = clk->ops->prepare(clk);
-
-	if (!ret)
-		clk->prepare_count++;
-	mutex_unlock(&clk->prepare_lock);
-
-	return ret;
-}
-
-void clk_unprepare(struct clk *clk)
-{
-	mutex_lock(&clk->prepare_lock);
-
-	WARN_ON(clk->prepare_count == 0);
-
-	if (--clk->prepare_count == 0 && clk->ops->unprepare)
-		clk->ops->unprepare(clk);
-
-	mutex_unlock(&clk->prepare_lock);
-}
-
-static inline int clk_prepare_enable(struct clk *clk)
-{
-	int ret;
-
-	ret = clk_prepare(clk);
-	if (ret)
-		return ret;
-	ret = clk_enable(clk);
-	if (ret)
-		clk_unprepare(clk);
-
-	return ret;
-}
-
-
-static inline void clk_disable_unprepare(struct clk *clk)
-{
-	clk_disable(clk);
-	clk_unprepare(clk);
-}
 
 #define blitload_init_ticks(shared) \
 	({ \
@@ -463,9 +414,9 @@ stm_bdisp2_aq_init(struct stm_bdisp2_aq      *aq,
 	blitload_init_ticks(aq->stdrv.bdisp_shared);
 
 #ifndef CONFIG_ARCH_STI
-	clk_prepare_enable(aq->bc->clk_ic);
+	clk_enable(aq->bc->clk_ic);
 #endif
-	clk_prepare_enable(aq->bc->clk_ip);
+	clk_enable(aq->bc->clk_ip);
 
 	/* do a BDisp global soft reset on the first device */
 	if (index == 0)
@@ -535,8 +486,8 @@ stm_bdisp2_aq_suspend(struct stm_bdisp2_aq *aq)
 
 	UNLOCK_ATOMIC(shared);
 
-	clk_disable_unprepare(aq->bc->clk_ip);
-	clk_disable_unprepare(aq->bc->clk_ic);
+	clk_disable(aq->bc->clk_ip);
+	clk_disable(aq->bc->clk_ic);
 
 	return 0;
 }
@@ -548,8 +499,8 @@ stm_bdisp2_aq_resume(struct stm_bdisp2_aq *aq)
 	struct stm_bdisp2_shared_area * const shared =
 		aq->stdrv.bdisp_shared;
 
-	clk_prepare_enable(aq->bc->clk_ic);
-	clk_prepare_enable(aq->bc->clk_ip);
+	clk_enable(aq->bc->clk_ic);
+	clk_enable(aq->bc->clk_ip);
 
 	/* Don't break current execution, we should wait until the
 	   current execution is finished. */
@@ -583,8 +534,8 @@ stm_bdisp2_aq_freeze(struct stm_bdisp2_aq *aq)
 	disable_irq(aq->irq);
 
 	/* Disable the blitter clocks */
-	clk_disable_unprepare(aq->bc->clk_ip);
-	clk_disable_unprepare(aq->bc->clk_ic);
+	clk_disable(aq->bc->clk_ip);
+	clk_disable(aq->bc->clk_ic);
 
 	return 0;
 }
@@ -597,8 +548,8 @@ stm_bdisp2_aq_restore(struct stm_bdisp2_aq *aq)
 		aq->stdrv.bdisp_shared;
 
 	/* Enable bdisp2 clocks */
-	clk_prepare_enable(aq->bc->clk_ic);
-	clk_prepare_enable(aq->bc->clk_ip);
+	clk_enable(aq->bc->clk_ic);
+	clk_enable(aq->bc->clk_ip);
 
 	/* Do a BDisp global soft reset on the first device */
 	if (aq->stdev.queue_id == 0)
@@ -671,7 +622,7 @@ stm_bdisp2_aq_suspend(struct stm_bdisp2_aq *aq)
 	disable_irq(aq->irq);
 
 	/* Disable the blitter clocks */
-	clk_disable_unprepare(aq->bc->clk_ip);
+	clk_disable(aq->bc->clk_ip);
 
 	return 0;
 }
@@ -685,7 +636,7 @@ stm_bdisp2_aq_resume(struct stm_bdisp2_aq *aq)
 		aq->stdrv.bdisp_shared;
 
 	/* Enable bdisp2 clocks */
-	clk_prepare_enable(aq->bc->clk_ip);
+	clk_enable(aq->bc->clk_ip);
 
     /* Set clock frequency */
 	if (aq->bc->clk_ip_freq) {
