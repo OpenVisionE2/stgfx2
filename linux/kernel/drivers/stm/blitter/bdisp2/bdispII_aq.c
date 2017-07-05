@@ -33,6 +33,33 @@
 
 static const int NODES_SIZE = 45 * PAGE_SIZE;
 
+int clk_prepare(struct clk *clk)
+{
+	int ret = 0;
+
+	mutex_lock(&clk->prepare_lock);
+	if (clk->prepare_count == 0 && clk->ops->prepare)
+		ret = clk->ops->prepare(clk);
+
+	if (!ret)
+		clk->prepare_count++;
+	mutex_unlock(&clk->prepare_lock);
+
+	return ret;
+}
+
+void clk_unprepare(struct clk *clk)
+{
+	mutex_lock(&clk->prepare_lock);
+
+	WARN_ON(clk->prepare_count == 0);
+
+	if (--clk->prepare_count == 0 && clk->ops->unprepare)
+		clk->ops->unprepare(clk);
+
+	mutex_unlock(&clk->prepare_lock);
+}
+
 static inline int clk_prepare_enable(struct clk *clk)
 {
 	int ret;
