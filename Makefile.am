@@ -1,1 +1,1 @@
-SUBDIRS = linux/directfb/gfxdrivers/stgfx2 linux/kernel
+SUBDIRS = linux/directfb/gfxdrivers/stgfx2
