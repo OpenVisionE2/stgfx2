@@ -31,6 +31,49 @@
 
 static const int NODES_SIZE = 45 * PAGE_SIZE;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0)
+int clk_disable_unprepare(struct clk *clk)
+{
+	return clk_disable(clk);
+}
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(3,3,0)
+int clk_disable_unprepare(struct clk *clk)
+{
+	res = clk_disable(clk);
+	if (res < 0)
+		return res;
+
+	res = clk_unprepare(clk);
+	if (ret < 0)
+		return res;
+
+	return 0;
+}
+#endif
+
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0)
+int clk_prepare_enable(struct clk *clk)
+{
+	return clk_enable(clk);
+}
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(3,3,0)
+int clk_prepare_enable(struct clk *clk)
+{
+	res = clk_prepare(clk);
+	if (ret < 0)
+		return res;
+
+	res = clk_enable(clk);
+	if (res < 0) {
+		clk_unprepare(clk);
+		return res;
+	}
+
+	return 0;
+}
+#endif
+
 
 #define blitload_init_ticks(shared) \
 	({ \
