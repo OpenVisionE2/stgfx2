@@ -213,9 +213,9 @@ stm_bdisp2_probe(struct platform_device *pdev)
 	/* Now that we have probed - we can suspend until we have work */
 	pm_runtime_suspend(&pdev->dev);
 	/* Set the delay to suspend the system */
-	pm_runtime_set_autosuspend_delay(&pdev->dev, 50);
+	/* pm_runtime_set_autosuspend_delay(&pdev->dev, 50); */
 	/* Activate the delay mechanism */
-	pm_runtime_use_autosuspend(&pdev->dev);
+	/* pm_runtime_use_autosuspend(&pdev->dev); */
 
 	return 0;
 
