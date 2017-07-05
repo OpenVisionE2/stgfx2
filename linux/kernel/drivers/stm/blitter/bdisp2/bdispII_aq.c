@@ -7,6 +7,7 @@
 #include <linux/sched.h>
 #include <linux/pm.h>
 #include <linux/pm_runtime.h>
+#include <linux/version.h>
 
 #include <asm/sizes.h>
 
